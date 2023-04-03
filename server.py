@@ -6,7 +6,7 @@ import random
 from tqdm import tqdm
 import copy
 import torch
-
+from utils import CustomDataset
 class Server:
     def __init__(self, config, data_dict, test_dict, train_dataset, test_dataset):
         self.config = config
@@ -17,13 +17,13 @@ class Server:
         self.global_model = config["model"](config["n_channels"], config["n_classes"])
         self.client_model = config["model"](config["n_channels"], config["n_classes"])
         self.client_ids = [*data_dict.keys()]
-        self.test_loader = DataLoader(test_dataset, batch_size=32)
+        self.test_loader = DataLoader(CustomDataset(test_dataset,list(range(len(test_dataset)))), batch_size=32)
         self.participation_percent = config["participation_percent"]
         ###### CHOOSING THE CLIENT ######
         if config["algorithm"] in ["fedavg", "fedbn"]:
             from normal_client import NormalClient
             self.client = NormalClient
-        elif config["algorithm"] == "fedreg":
+        elif config["algorithm"] == "fedprox":
             from fedprox_client import FedProxClient
             self.client = partial(FedProxClient, config["mu"] if config["mu"] else 0.1)
         else:
@@ -53,7 +53,7 @@ class Server:
     
     
 
-    def aggregate_weighted_state_dicts(self, wstate_dict):
+    def aggregate_(self, wstate_dict):
         """
         Aggregates a dictionary of weighted state dictionaries.
 
@@ -86,7 +86,7 @@ class Server:
                     total_weight += weight
 
                 # Divide by the sum of weights to get the weighted average
-                aggregated_tensor /= total_weight
+                aggregated_tensor = torch.divide(aggregated_tensor, total_weight)
                 # Set the tensor in the aggregated state dict to the weighted average
                 aggregated_state_dict[key] = aggregated_tensor
 
@@ -133,6 +133,7 @@ class Server:
                 states_dict[client.id]=[w, local_update]
                 print()
             self.aggregate_(states_dict)
+            print(self.test_global())
 
 
     def test_global(self):
@@ -143,8 +144,10 @@ class Server:
                 x.to(self.device)
                 y.to(self.device)
                 logits = self.global_model(x)
-                preds = np.argmax(logits, dim=1)
-                correct = np.sum(preds==y)
+                preds = np.argmax(logits, axis=1)
+                
+                correct = torch.eq(preds,y.flatten())
+                correct = torch.sum(correct)
                 total_correct += correct
 
-        return self.len_test, self.len_test
+        return self.len_test, total_correct

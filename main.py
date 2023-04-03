@@ -35,8 +35,10 @@ def main():
         train_data_dict = non_iid_partition(train_dataset, config["num_clients"])
 
     test_data_dict = iid_partition(test_dataset, config["num_clients"])
+    # TODO delete this
     print(config)
-    algorithm = config["algorithm"]
+    algorithm = config["algorithm"].lower()
+    print(algorithm)
     match algorithm:
         case "fedavg":
             from server import Server
@@ -44,6 +46,7 @@ def main():
             pass
         case "fedprox":
             from server import Server
+            print("FEDPROX")
             server = Server(config, train_data_dict, test_data_dict, train_dataset, test_dataset)
             pass
         case "fedreg":
@@ -56,7 +59,6 @@ def main():
             pass
     
     server.train()
-
 
 if __name__=="__main__":
     main()

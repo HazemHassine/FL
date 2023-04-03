@@ -3,7 +3,7 @@ from torch.utils.data import DataLoader
 from utils import CustomDataset
 import torch
 import numpy as np
-
+from torch.optim import SGD
 
 class FedProxClient():
     
@@ -12,22 +12,25 @@ class FedProxClient():
         self.train_loader = DataLoader(CustomDataset(train_dataset, data_idxs),batch_size=config["batch_size"], shuffle=True)
         self.test_dataset = test_dataset
         self.test_loader = DataLoader(CustomDataset(test_dataset, test_idxs), batch_size=32, shuffle=False)
-        self.model = config["model"](config["num_channels"], config["num_classes"])
+        self.model = config["model"](config["n_channels"], config["n_classes"])
         self.device = config["device"]
+        self.config = config
         self.len_test = len(test_dataset)
-        self.inner_optimizer = config["inner_opt"](self.model.parameters(), config["learning_rate"])
-        self.loss_fn = config["loss_fn"]()
+        self.inner_optimizer = SGD
+        self.loss_fn = config["criterion"]()
+        self.num_train_samples = len(data_idxs)
         self.mu = mu
 
     def train(self):
         old_parameters = self.model.parameters()
+        optimizer = SGD(self.model.parameters(), self.config["learning_rate"])
         self.model.train()
         train_loss = []
         for l_epoch in range(self.config["local_epochs"]):
             for x, y in self.train_loader:
                 x.to(self.device)
                 y.to(self.device)
-                self.inner_optimizer.zero_grad()
+                optimizer.zero_grad()
                 logits = self.model(x)
                 proximal_term = 0.0
                 # iterate through the current and global model parameters
@@ -36,9 +39,9 @@ class FedProxClient():
                 
                 loss = self.loss_fn(logits, y.flatten()) + (self.mu/2)*proximal_term
                 loss.backward()
-                self.inner_optimizer.step()
-                train_loss.append(loss.cpu().numpy()[0])
-        return train_loss
+                optimizer.step()
+                train_loss.append(loss.detach().item())
+        return self.num_train_samples, self.model.state_dict()
 
     def get_param(self) -> OrderedDict:
         return self.model.state_dict()

@@ -20,18 +20,18 @@ class NormalClient():
         self.num_train_samples = len(data_idxs)
 
     def train(self):
-        self.inner_optimizer = self.inner_optimizer(self.model.parameters(), self.config["learning_rate"])
+        optimizer = SGD(self.model.parameters(), self.config["learning_rate"])
         self.model.train()
         train_loss = []
         for l_epoch in range(self.config["local_epochs"]):
             for x, y in self.train_loader:
                 x.to(self.device)
                 y.to(self.device)
-                self.inner_optimizer.zero_grad()
+                optimizer.zero_grad()
                 logits = self.model(x)
                 loss = self.loss_fn(logits, y.squeeze(-1))
                 loss.backward()
-                self.inner_optimizer.step()
+                optimizer.step()
                 train_loss.append(loss.detach().item())
         print(np.mean(train_loss))
         return self.num_train_samples, self.model.state_dict()
