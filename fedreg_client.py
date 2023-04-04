@@ -60,6 +60,7 @@ class FedRegClient():
             parameters = list(global_model.parameters())
             psuedo_data = []
             perturb_data = []
+            # TODO generate fake data from train_dataset
             for d in self.train_loader:
                 psuedo, perturb = generate_fake(global_model,d , p_iters, ps_eta, pt_eta, self.config["task"])
                 psuedo_data.append(psuedo)

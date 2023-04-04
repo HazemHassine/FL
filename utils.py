@@ -347,7 +347,8 @@ def FSGM(model, inp, label, iters, eta, criterion):
     inp.requires_grad = True
     minv, maxv = float(inp.min().detach().cpu().numpy()), float(inp.max().detach().cpu().numpy())
     for _ in range(iters):
-        loss = criterion(model(inp), label).mean()
+        out = model(inp)
+        loss = criterion(out, label.flatten()).mean()
         dp = torch.sign(torch.autograd.grad(loss, inp)[0])
         inp.data.add_(eta*dp.detach()).clamp(minv, maxv)
     return inp
@@ -356,9 +357,9 @@ def generate_fake(model, d, p_iters, ps_eta, pt_eta, task):
     x, y = d
     model.eval()
     if task == "multi-label, binary-class":
-        criterion = nn.BCEWithLogitsLoss
+        criterion = nn.BCEWithLogitsLoss()
     else:
-        criterion = nn.CrossEntropyLoss
+        criterion = nn.CrossEntropyLoss()
     psuedo, perturb = x.detach(), x.detach()
     if psuedo.device != next(model.parameters()).device:
         psuedo = psuedo.to(next(model.parameters()).device)

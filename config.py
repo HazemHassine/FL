@@ -28,5 +28,6 @@ config = {
     "learning_rate": 0.1,
     "ps_eta": 0.1,
     "pt_eta": 0.0001,
-    "p_iters": 10
+    "p_iters": 10,
+    "mu": 0.1
 }
