@@ -6,6 +6,7 @@ import numpy as np
 from torch.optim import SGD
 import copy
 from utils import generate_fake
+import gc
 class FedRegClient():
     def __init__(self, id, config, train_dataset, test_dataset, data_idxs, test_idxs, gamma, ps_eta, pt_eta, p_iters) -> None:
         self.id = id
@@ -25,8 +26,6 @@ class FedRegClient():
         self.ps_eta = ps_eta
         self.pt_eta = pt_eta
         self.p_iters = p_iters
-        psuedo_data = []
-        perturb_data = []
         # def generate_fake(model, d, p_iters, ps_eta, pt_eta)
         
         # TODO: Generate pseudo and fake in the init using the below valuess
@@ -49,6 +48,13 @@ class FedRegClient():
         global_model = self.model
         criterion = self.loss_fn()
         lr = self.config["learning_rate"]
+        psuedo_data = []
+        perturb_data = []
+        for d in self.train_loader:
+                psuedo, perturb = generate_fake(global_model, d , p_iters, ps_eta, pt_eta, self.config["task"])
+                psuedo_data.append(psuedo)
+                perturb_data.append(perturb)
+        
         for epoch in range(self.config["local_epochs"]):
             median_model, old_model, penal_model = copy.deepcopy(global_model), copy.deepcopy(global_model), copy.deepcopy(global_model)
             median_parameters = list(median_model.parameters())
@@ -58,26 +64,20 @@ class FedRegClient():
             old_model_opt = SGD(old_model.parameters(), lr=lr)
             penal_model_opt = SGD(penal_model.parameters(), lr=lr)
             parameters = list(global_model.parameters())
-            psuedo_data = []
-            perturb_data = []
             # TODO generate fake data from train_dataset
-            for d in self.train_loader:
-                psuedo, perturb = generate_fake(global_model,d , p_iters, ps_eta, pt_eta, self.config["task"])
-                psuedo_data.append(psuedo)
-                perturb_data.append(perturb)
-            for i, (x, y) in self.train_loader:
+            for i, (x, y) in enumerate(self.train_loader):
                 median_model_opt.zero_grad()
                 old_model_opt.zero_grad()
-                penal_model_opt.zero_grad()
+                penal_model_opt.zero_grad() 
                 median_model.train()
                 old_model.train()
                 penal_model.train()
-                pseudo_datapoint, perturbed_datapoint = pseudo_datapoint['''something'''], perturbed_datapoint['''something''']
+                pseudo_datapoint, perturbed_datapoint = psuedo_data[i], perturb_data[i]
 
                 for params, median_params, old_params in zip(parameters, median_parameters, old_parameters):
                     median_params.data.copy_(gamma*params+(1-gamma)*old_params)
 
-                mloss = criterion(median_model(x), y).mean()
+                mloss = criterion(median_model(x), y.flatten()).mean()
                 grad1 = torch.autograd.grad(mloss, median_parameters)
 
                 for g1, p in zip(grad1, parameters):
@@ -85,7 +85,6 @@ class FedRegClient():
 
                 for p, o, pp in zip(parameters, old_parameters, penal_parameters):
                     pp.data.copy_(p*beta+o*(1-beta))
-
                 ploss = criterion(penal_model(pseudo_datapoint[0]), pseudo_datapoint[2]).mean()
                 grad2 = torch.autograd.grad(ploss, penal_parameters)
                 with torch.no_grad():
@@ -94,7 +93,7 @@ class FedRegClient():
                     w_s = (sum([(g0*g2).sum() for g0, g2 in zip(dtheta, grad2)]))/s2.add(1e-30)
                     w_s = w_s.clamp(0.0, )
 
-                pertub_ploss = criterion(penal_model(perturbed_datapoint[0]), perturbed_datapoint[1]).mean()
+                pertub_ploss = criterion(penal_model(perturbed_datapoint[0]), perturbed_datapoint[1].flatten()).mean()
                 grad3 = torch.autograd.grad(pertub_ploss, penal_parameters)
                 s3 = sum([(g3*g3).sum() for g3 in grad3])
                 w_p = (sum([((g0-w_s*g2)*g3).sum() for g0, g2, g3 in zip(dtheta, grad2, grad3)]))/s3.add(1e-30)
@@ -105,7 +104,8 @@ class FedRegClient():
                 median_model_opt.step()
                 old_model_opt.step()
                 penal_model_opt.step()
-
+            gc.collect()
+        return self.num_train_samples, global_model.state_dict()
 
     def get_param(self) -> OrderedDict:
         return self.model.state_dict()

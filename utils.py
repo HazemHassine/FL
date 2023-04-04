@@ -348,6 +348,7 @@ def FSGM(model, inp, label, iters, eta, criterion):
     minv, maxv = float(inp.min().detach().cpu().numpy()), float(inp.max().detach().cpu().numpy())
     for _ in range(iters):
         out = model(inp)
+        
         loss = criterion(out, label.flatten()).mean()
         dp = torch.sign(torch.autograd.grad(loss, inp)[0])
         inp.data.add_(eta*dp.detach()).clamp(minv, maxv)
