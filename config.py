@@ -26,5 +26,7 @@ config = {
     "iid": True,
     "criterion":   nn.BCEWithLogitsLoss if INFO["bloodmnist"]["task"] == "multi-label, binary-class" else nn.CrossEntropyLoss,
     "learning_rate": 0.1,
-    "mu":0.1
+    "ps_eta": 0.1,
+    "pt_eta": 0.0001,
+    "p_iters": 10
 }

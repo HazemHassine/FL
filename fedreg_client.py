@@ -19,7 +19,8 @@ class FedRegClient():
         self.len_test = len(test_dataset)
         self.num_train_samples = len(data_idxs)
         self.optimizer = SGD(self.model.parameters(), lr=config["learning_rate"])
-        self.loss_fn = config["criterion"]()
+        self.loss_fn = config["criterion"]
+        self.config= config
         self.gamma = gamma
         self.ps_eta = ps_eta
         self.pt_eta = pt_eta
@@ -38,27 +39,29 @@ class FedRegClient():
         ### special for fedreg ###
 
 
+# TODO: change the training function to include the pseduo and perturbed data losses and generation and everything
     def train(self):
         gamma = self.gamma
         ps_eta = self.ps_eta
         pt_eta = self.pt_eta
         p_iters = self.p_iters
         beta = 0.5
+        global_model = self.model
         criterion = self.loss_fn()
         lr = self.config["learning_rate"]
         for epoch in range(self.config["local_epochs"]):
-            median_model, old_model, penal_model = copy.deepcopy(self.global_model), copy.deepcopy(self.global_model), copy.deepcopy(self.global_model)
+            median_model, old_model, penal_model = copy.deepcopy(global_model), copy.deepcopy(global_model), copy.deepcopy(global_model)
             median_parameters = list(median_model.parameters())
             old_parameters = list(old_model.parameters())
             penal_parameters = list(penal_model.parameters())
             median_model_opt = SGD(median_model.parameters(), lr=lr)
             old_model_opt = SGD(old_model.parameters(), lr=lr)
             penal_model_opt = SGD(penal_model.parameters(), lr=lr)
-            parameters = list(self.global_model.parameters())
+            parameters = list(global_model.parameters())
             psuedo_data = []
             perturb_data = []
-            for d in self.train_lodaer:
-                psuedo, perturb = generate_fake(self.global_model, p_iters, ps_eta, pt_eta)
+            for d in self.train_loader:
+                psuedo, perturb = generate_fake(global_model,d , p_iters, ps_eta, pt_eta, self.config["task"])
                 psuedo_data.append(psuedo)
                 perturb_data.append(perturb)
             for i, (x, y) in self.train_loader:
@@ -102,27 +105,6 @@ class FedRegClient():
                 old_model_opt.step()
                 penal_model_opt.step()
 
-    # TODO: change the training function to include the pseduo and perturbed data losses and generation and everything
-    def train(self):
-        optimizer = SGD(self.model.parameters(), self.config["learning_rate"])
-        gamma = self.gamma
-        ps_eta = self.ps_eta
-        pt_eta = self.pt_eta
-        p_iters = self.p_iters
-        
-        self.model.train()
-        train_loss = []
-        for l_epoch in range(self.config["local_epochs"]):
-            for x, y in self.train_loader:
-                x.to(self.device)
-                y.to(self.device)
-                self.inner_optimizer.zero_grad()
-                logits = self.model(x)
-                loss = self.loss_fn(y, logits)
-                loss.backward()
-                self.inner_optimizer.step()
-                train_loss.append(loss.cpu().numpy()[0])
-        return train_loss
 
     def get_param(self) -> OrderedDict:
         return self.model.state_dict()

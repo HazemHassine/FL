@@ -31,6 +31,7 @@ def isfloat(num):
     except ValueError:
         return False
 def create_config()-> dict:
+    # TODO add fedreg's parameters
     config = {}
     while True:
         default = input('''
@@ -335,30 +336,34 @@ def iid_partition(dataset, clients):
         image_idxs = list(set(image_idxs) - client_dict[i])
     return client_dict
 
-def FSGM(model, inp, label, iters, eta):
+def FSGM(model, inp, label, iters, eta, criterion):
     '''
     the function implements the FGSM attack to generate adversarial examples 
     for the given model, inp, and label
     this function is usually called from the generate fake method from a Model class
     this usually the model argument will take the value of self, called from Model 
     '''
-    
+
     inp.requires_grad = True
     minv, maxv = float(inp.min().detach().cpu().numpy()), float(inp.max().detach().cpu().numpy())
     for _ in range(iters):
-        loss = model.loss(model.forward(inp), label).mean()
+        loss = criterion(model(inp), label).mean()
         dp = torch.sign(torch.autograd.grad(loss, inp)[0])
         inp.data.add_(eta*dp.detach()).clamp(minv, maxv)
     return inp
 
-def generate_fake(model, d, p_iters, ps_eta, pt_eta):
+def generate_fake(model, d, p_iters, ps_eta, pt_eta, task):
     x, y = d
     model.eval()
+    if task == "multi-label, binary-class":
+        criterion = nn.BCEWithLogitsLoss
+    else:
+        criterion = nn.CrossEntropyLoss
     psuedo, perturb = x.detach(), x.detach()
     if psuedo.device != next(model.parameters()).device:
         psuedo = psuedo.to(next(model.parameters()).device)
         perturb = perturb.to(next(model.parameters()).device)
-    psuedo = FSGM(model, psuedo, y, p_iters, ps_eta)
-    perturb = FSGM(model, perturb, y, p_iters, pt_eta)
+    psuedo = FSGM(model, psuedo, y, p_iters, ps_eta, criterion)
+    perturb = FSGM(model, perturb, y, p_iters, pt_eta, criterion)
     psuedo_y, perturb_y = model(psuedo), model(perturb)
     return [psuedo, y, psuedo_y], [perturb, y, perturb_y]
