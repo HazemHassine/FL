@@ -209,6 +209,12 @@ Choose:
 DATASET DESCRIPTION: {task}
 ***************************************
                 ''')
+                print("Close the image please")
+                import matplotlib.pyplot as plt
+                print(ds_name)
+                img = plt.imread(f"visualization/{ds_name}.png")
+                plt.imshow(img)
+                plt.show()
                 while True:
                     confirm = input("Do you confirm? [y/n] ")
                     if confirm.lower() == "y":
