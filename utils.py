@@ -6,6 +6,7 @@ import numpy as np
 import torch.nn as nn
 from torchvision import transforms
 
+
 class CustomDataset(Dataset):
     def __init__(self, dataset, idxs, transform=None) -> None:
         self.dataset = dataset
@@ -14,14 +15,15 @@ class CustomDataset(Dataset):
 
     def __len__(self) -> int:
         return len(self.idxs)
-    
+
     def __getitem__(self, index):
         if self.transform == None:
             return self.dataset[self.idxs[index]]
         else:
             x, y = self.dataset[self.idxs[index]]
             x = self.transform(x)
-            return torch.tensor(x, requires_grad=True).permute((1,2,0)) if not type(x) == type(torch.tensor([1])) else x , torch.tensor(y).long()
+            return torch.tensor(x, requires_grad=True).permute((1, 2, 0)) if not type(x) == type(torch.tensor([1])) else x, torch.tensor(y).long()
+
 
 def isfloat(num):
     try:
@@ -29,7 +31,9 @@ def isfloat(num):
         return True
     except ValueError:
         return False
-def create_config()-> dict:
+
+
+def create_config() -> dict:
     # TODO add fedreg's parameters
     config = {}
     while True:
@@ -39,7 +43,7 @@ def create_config()-> dict:
         else:
             baseline = False if baseline.lower() == "y" else True
             break
-    
+
     while True:
         default = input('''
 Use default folder configuration:
@@ -56,7 +60,7 @@ Use default folder configuration:
         ''')
         if not os.path.exists(data_path):
             os.makedirs(data_path)
-        
+
         log_path = input('''Enter the log path:
             ''')
         if not os.path.exists(log_path):
@@ -78,10 +82,11 @@ Use default folder configuration:
     4- fedreg
             ''')
             if algorithm.isdigit():
-                if int(algorithm) not in [1,2,3,4]:
+                if int(algorithm) not in [1, 2, 3, 4]:
                     print("Enter a valid number please (1/2/3/4)")
                 else:
-                    algos = {1: "fedavg", 2: "fedprox", 3: "fedbn", 4: "fedreg"}
+                    algos = {1: "fedavg", 2: "fedprox",
+                             3: "fedbn", 4: "fedreg"}
                     algorithm = algos[int(algorithm)]
                     break
         while True:
@@ -157,13 +162,13 @@ Use default folder configuration:
         else:
             print("Enter a number")
     while True:
-    # TODO: import models etc..
+        # TODO: import models etc..
         model_choice = input('''Choose a model:
             1. CNN
             2. resnet18
-        ''')   
+        ''')
         if model_choice.isdigit():
-            if int(model_choice) not in [1,2]:
+            if int(model_choice) not in [1, 2]:
                 print("Enter either 1 or 2")
                 continue
             match int(model_choice):
@@ -188,7 +193,7 @@ Use default folder configuration:
     (Data heterogenity in terms of labels)
             ''')
             if iid.isdigit():
-                if int(iid) not in [1,2]:
+                if int(iid) not in [1, 2]:
                     print("Enter either 1 or 2")
                     continue
                 iid = True if iid == 1 else False
@@ -254,7 +259,7 @@ TASK: {task}
             break
         else:
             print("Please enter a number")
-    
+
     while True:
         CV = input("Use K-fold cross valudation? [y/n]")
         if CV.lower() not in ["y", "n"]:
@@ -266,7 +271,8 @@ TASK: {task}
                 break
             else:
                 while True:
-                    k = input("Enter the number of folds (K), Enter: default (5)")
+                    k = input(
+                        "Enter the number of folds (K), Enter: default (5)")
                     if k == '':
                         k = 5
                         break
@@ -275,7 +281,6 @@ TASK: {task}
                         continue
                     else:
                         k = int(k)
-
 
     import torch
     if baseline:
@@ -286,13 +291,14 @@ TASK: {task}
             else:
                 evaluate = True if evaluate == "y" else False
                 break
-        
+
         config = {
             "baseline": baseline,
             "device": "cuda" if torch.cuda.is_available() else "cpu",
             "ds_name": ds_name,
             "seed": seed,  # random seed
-            "model": model,  # the model to be trained the p ps and pt are only relevant in the fedreg.
+            # the model to be trained the p ps and pt are only relevant in the fedreg.
+            "model": model,
             "n_classes": num_classes,
             "n_channels": num_channels,
             "task": task,
@@ -300,7 +306,8 @@ TASK: {task}
             "local_epochs": local_epochs,  # the number of epochs in local training stage
             "batch_size": batch_size,  # the batch size in local training stage
             "log_path": log_path,  # the path to save the log file
-            "train_transform": None,  # the preprocessing of train data, please refer to torchvision.transforms
+            # the preprocessing of train data, please refer to torchvision.transforms
+            "train_transform": None,
             "test_transform": None,  # the preprocessing of test dasta
             "criterion":  nn.BCEWithLogitsLoss if task == "multi-label, binary-class" else nn.CrossEntropyLoss,
             "learning_rate": learning_rate,
@@ -312,7 +319,8 @@ TASK: {task}
             "device": "cuda" if torch.cuda.is_available() else "cpu",
             "ds_name": ds_name,
             "seed": seed,  # random seed
-            "model": model,  # the model to be trained the p ps and pt are only relevant in the fedreg.
+            # the model to be trained the p ps and pt are only relevant in the fedreg.
+            "model": model,
             "algorithm": algorithm,  # FL optimizer, can be FedAvg, FedProx, FedCurv or SCAFFOLD
             "n_classes": num_classes,
             "n_channels": num_channels,
@@ -324,7 +332,8 @@ TASK: {task}
             "local_epochs": local_epochs,  # the number of epochs in local training stage
             "batch_size": batch_size,  # the batch size in local training stage
             "log_path": log_path,  # the path to save the log file
-            "train_transform": None,  # the preprocessing of train data, please refer to torchvision.transforms
+            # the preprocessing of train data, please refer to torchvision.transforms
+            "train_transform": None,
             "test_transform": None,  # the preprocessing of test dasta
             "eval_train": True,  # whether to evaluate the model performance on the training data. Recommend to False when the training dataset is too large
             "gamma": gamma,  # the value of gamma when FedReg is used, the weight for the proximal term when FedProx is used, or the value of lambda when FedCurv is used
@@ -332,7 +341,7 @@ TASK: {task}
             "criterion":  nn.BCEWithLogitsLoss if task == "multi-label, binary-class" else nn.CrossEntropyLoss,
             "learning_rate": learning_rate,
             "cross_validation": CV,
-            "K" : k if CV else "No Cross validation"
+            "K": k if CV else "No Cross validation"
         }
     while True:
         see = input("Do you want to see the config file [y/n]")
@@ -354,8 +363,9 @@ TASK: {task}
             break
         break
     config["model"] = model
-    
+
     return config
+
 
 def non_iid_partition(dataset, num_clients):
     """
@@ -375,27 +385,30 @@ def non_iid_partition(dataset, num_clients):
       - Dictionary of image indexes for each client
     """
     shards_size = 9
-    total_shards = len(dataset)// shards_size
+    total_shards = len(dataset) // shards_size
     num_shards_per_client = total_shards // num_clients
     shard_idxs = [i for i in range(total_shards)]
     client_dict = {i: np.array([], dtype='int64') for i in range(num_clients)}
     idxs = np.arange(len(dataset))
     # get labels as a numpy array
-    data_labels = np.array([np.array(target).flatten() for _, target in dataset]).flatten()
+    data_labels = np.array([np.array(target).flatten()
+                           for _, target in dataset]).flatten()
     # sort the labels
     label_idxs = np.vstack((idxs, data_labels))
-    label_idxs = label_idxs[:, label_idxs[1,:].argsort()]
-    idxs = label_idxs[0,:]
+    label_idxs = label_idxs[:, label_idxs[1, :].argsort()]
+    idxs = label_idxs[0, :]
 
     # divide the data into total_shards of size shards_size
     # assign num_shards_per_client to each client
     for i in range(num_clients):
-        rand_set = set(np.random.choice(shard_idxs, num_shards_per_client, replace=False))
+        rand_set = set(np.random.choice(
+            shard_idxs, num_shards_per_client, replace=False))
         shard_idxs = list(set(shard_idxs) - rand_set)
 
         for rand in rand_set:
-            client_dict[i] = np.concatenate((client_dict[i], idxs[rand*shards_size:(rand+1)*shards_size]), axis=0)
-    return client_dict # client dict has [idx: list(datapoint indices)
+            client_dict[i] = np.concatenate(
+                (client_dict[i], idxs[rand*shards_size:(rand+1)*shards_size]), axis=0)
+    return client_dict  # client dict has [idx: list(datapoint indices)
 
 
 def iid_partition(dataset, clients):
@@ -413,9 +426,11 @@ def iid_partition(dataset, clients):
     client_dict = {}
     image_idxs = [i for i in range(len(dataset))]
     for i in range(clients):
-        client_dict[i] = set(np.random.choice(image_idxs, num_items_per_client, replace=False))
+        client_dict[i] = set(np.random.choice(
+            image_idxs, num_items_per_client, replace=False))
         image_idxs = list(set(image_idxs) - client_dict[i])
     return client_dict
+
 
 def FSGM(model, inp, label, iters, eta, criterion):
     '''
@@ -426,14 +441,16 @@ def FSGM(model, inp, label, iters, eta, criterion):
     '''
 
     inp.requires_grad = True
-    minv, maxv = float(inp.min().detach().cpu().numpy()), float(inp.max().detach().cpu().numpy())
+    minv, maxv = float(inp.min().detach().cpu().numpy()), float(
+        inp.max().detach().cpu().numpy())
     for _ in range(iters):
         out = model(inp)
-        
+
         loss = criterion(out, label.flatten()).mean()
         dp = torch.sign(torch.autograd.grad(loss, inp)[0])
         inp.data.add_(eta*dp.detach()).clamp(minv, maxv)
     return inp
+
 
 def generate_fake(model, d, p_iters, ps_eta, pt_eta, task):
     x, y = d

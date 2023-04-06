@@ -9,11 +9,14 @@ import os
 from tqdm import tqdm
 import warnings
 warnings.filterwarnings(action='ignore', category=UserWarning)
+
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-c", "--config", help="The config file", required=False)
+    parser.add_argument(
+        "-c", "--config", help="The config file", required=False)
     args = parser.parse_args()
-    
+
     if args.config is not None:
         config = importlib.import_module(args.config.replace("/", "."))
         config = config.config
@@ -32,40 +35,47 @@ def main():
     else:
         config = create_config()
 
-
     info = INFO[config["ds_name"]]
     DataClass = getattr(medmnist, info["python_class"])
     if not os.path.exists(config["data_path"]):
         os.makedirs(config["data_path"])
-    
-    train_dataset = DataClass(root=config["data_path"], download=True, split="train")
-    test_dataset = DataClass(root=config["data_path"], download=True, split="test")
+
+    train_dataset = DataClass(
+        root=config["data_path"], download=True, split="train")
+    test_dataset = DataClass(
+        root=config["data_path"], download=True, split="test")
 
     if not config["baseline"]:
         if config["iid"]:
-            train_data_dict = iid_partition(train_dataset, config["num_clients"])
+            train_data_dict = iid_partition(
+                train_dataset, config["num_clients"])
         else:
-            train_data_dict = non_iid_partition(train_dataset, config["num_clients"])
+            train_data_dict = non_iid_partition(
+                train_dataset, config["num_clients"])
 
         test_data_dict = iid_partition(test_dataset, config["num_clients"])
         algorithm = config["algorithm"].lower()
         match algorithm:
             case "fedavg":
                 from server import Server
-                server = Server(config, train_data_dict, test_data_dict, train_dataset, test_dataset)
+                server = Server(config, train_data_dict,
+                                test_data_dict, train_dataset, test_dataset)
                 pass
             case "fedprox":
                 from server import Server
                 print("FEDPROX")
-                server = Server(config, train_data_dict, test_data_dict, train_dataset, test_dataset)
+                server = Server(config, train_data_dict,
+                                test_data_dict, train_dataset, test_dataset)
                 pass
             case "fedreg":
                 from server import Server
-                server = Server(config, train_data_dict, test_data_dict, train_dataset, test_dataset)
+                server = Server(config, train_data_dict,
+                                test_data_dict, train_dataset, test_dataset)
                 pass
             case "fedbn":
                 from fedbn_server import FedBNServer
-                server = FedBNServer(config, train_data_dict, test_data_dict, train_dataset, test_dataset)
+                server = FedBNServer(
+                    config, train_data_dict, test_data_dict, train_dataset, test_dataset)
                 pass
             case _:
                 raise NotImplementedError
@@ -78,8 +88,10 @@ def main():
         from utils import CustomDataset
         model = config["model"](config["n_channels"], config["n_classes"])
         len_test_dataset = len(test_dataset)
-        train_loader = DataLoader(CustomDataset(train_dataset, list(range(len(train_dataset)))), batch_size=config["batch_size"], shuffle=True)
-        test_loader = DataLoader(CustomDataset(test_dataset, list(range(len_test_dataset))), batch_size=config["batch_size"], shuffle=False)
+        train_loader = DataLoader(CustomDataset(train_dataset, list(
+            range(len(train_dataset)))), batch_size=config["batch_size"], shuffle=True)
+        test_loader = DataLoader(CustomDataset(test_dataset, list(
+            range(len_test_dataset))), batch_size=config["batch_size"], shuffle=False)
         optimizer = SGD(model.parameters(), lr=config["learning_rate"])
         train_loss = []
         loss_fn = config["criterion"]()
@@ -88,7 +100,7 @@ def main():
         for e in tqdm(range(1, config["local_epochs"]+1)):
             temp_loss = []
             print(f"EPOCH {e}")
-            for i, (x,y) in enumerate(train_loader):
+            for i, (x, y) in enumerate(train_loader):
                 x = torch.tensor(x, requires_grad=True).to(config["device"])
                 y = torch.tensor(y).to(config["device"])
                 optimizer.zero_grad()
@@ -103,21 +115,23 @@ def main():
             if config["evaluate"]:
                 model.eval()
                 with torch.no_grad():
-                    for i, (x,y) in enumerate(test_loader):
+                    for i, (x, y) in enumerate(test_loader):
                         x = torch.tensor(x).to(config["device"])
                         y = torch.tensor(y).to(config["device"])
                         logits = model(x)
                         preds = np.argmax(logits.detach().numpy(), axis=1)
                         correct = sum(np.equal(preds, y.flatten()))
-                    print(f"Accuracy at epoch {e} is {correct/len_test_dataset}")
-        for i, (x,y) in enumerate(test_loader):
+                    print(
+                        f"Accuracy at epoch {e} is {correct/len_test_dataset}")
+        for i, (x, y) in enumerate(test_loader):
             x = torch.tensor(x).to(config["device"])
             y = torch.tensor(y).to(config["device"])
             logits = model(x)
             preds = np.argmax(logits.detach().numpy(), axis=1)
             correct = sum(np.equal(preds, y.flatten()))
 
-        print(f"Accuracy after {config['local_epochs']} of training is {correct/len_test_dataset}")
+        print(
+            f"Accuracy after {config['local_epochs']} of training is {correct/len_test_dataset}")
         # optimizer = SGD(self.model.parameters(), self.config["learning_rate"])
         # self.model.train()
         # train_loss = []
@@ -135,5 +149,5 @@ def main():
         # return self.num_train_samples, self.model.state_dict()
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
     main()
