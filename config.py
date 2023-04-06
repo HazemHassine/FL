@@ -1,4 +1,4 @@
-from models import ResNet18
+from models import CNN
 from medmnist import INFO
 import torch
 import torch.nn as nn
@@ -17,7 +17,7 @@ config = {'algorithm': 'fedavg',
  'learning_rate': 0.01,
  'local_epochs': 2,
  'log_path': './logs',
- 'model': ResNet18,
+ 'model': CNN,
  'n_channels': 1,
  'n_classes': 11,
  'num_clients': 2,

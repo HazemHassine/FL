@@ -21,7 +21,7 @@ class CustomDataset(Dataset):
         else:
             x, y = self.dataset[self.idxs[index]]
             x = self.transform(x)
-            return torch.tensor(x, requires_grad=True).permute((1,2,0)) if not type(x) == type(torch.tensor([1])) else x , torch.tensor(y)
+            return torch.tensor(x, requires_grad=True).permute((1,2,0)) if not type(x) == type(torch.tensor([1])) else x , torch.tensor(y).long()
 
 def isfloat(num):
     try:

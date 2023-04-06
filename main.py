@@ -18,7 +18,6 @@ def main():
         config = importlib.import_module(args.config.replace("/", "."))
         config = config.config
         model = config["model"]
-        print(model)
         try:
             from pprint import pprint
             config["model"] = None
