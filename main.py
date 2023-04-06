@@ -32,11 +32,9 @@ def main():
         config["model"] = model
     else:
         config = create_config()
-    print(model)
 
 
     info = INFO[config["ds_name"]]
-    print(config["ds_name"])
     DataClass = getattr(medmnist, info["python_class"])
     if not os.path.exists(config["data_path"]):
         os.makedirs(config["data_path"])
@@ -52,7 +50,6 @@ def main():
 
         test_data_dict = iid_partition(test_dataset, config["num_clients"])
         algorithm = config["algorithm"].lower()
-        print(algorithm)
         match algorithm:
             case "fedavg":
                 from server import Server

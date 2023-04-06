@@ -68,9 +68,7 @@ Use default folder configuration:
             os.mkdir("logs")
         data_path = "./data"
         log_path = "./logs"
-    print(baseline)
     if not baseline:
-        print("in where i shouldn't be")
         while True:
             algorithm = input('''
     Choose between:
@@ -229,12 +227,11 @@ Use default folder configuration:
                 print(f'''\t\t
 **********DATASET DESCRIPTION**********
 {info["description"]}
-DATASET DESCRIPTION: {task}
+TASK: {task}
 ***************************************
                 ''')
                 print("Close the image please")
                 import matplotlib.pyplot as plt
-                print(ds_name)
                 img = plt.imread(f"visualization/{ds_name}.png")
                 plt.imshow(img)
                 plt.show()
@@ -257,6 +254,29 @@ DATASET DESCRIPTION: {task}
             break
         else:
             print("Please enter a number")
+    
+    while True:
+        CV = input("Use K-fold cross valudation? [y/n]")
+        if CV.lower() not in ["y", "n"]:
+            print("Enter a valid choice [y/n]")
+        else:
+            CV = True if CV.lower() == "y" else False
+            if not CV:
+                k = None
+                break
+            else:
+                while True:
+                    k = input("Enter the number of folds (K), Enter: default (5)")
+                    if k == '':
+                        k = 5
+                        break
+                    if not k.isdigit():
+                        print("Please enter a digit")
+                        continue
+                    else:
+                        k = int(k)
+
+
     import torch
     if baseline:
         while True:
@@ -310,7 +330,9 @@ DATASET DESCRIPTION: {task}
             "gamma": gamma,  # the value of gamma when FedReg is used, the weight for the proximal term when FedProx is used, or the value of lambda when FedCurv is used
             "iid": iid,
             "criterion":  nn.BCEWithLogitsLoss if task == "multi-label, binary-class" else nn.CrossEntropyLoss,
-            "learning_rate": learning_rate
+            "learning_rate": learning_rate,
+            "cross_validation": CV,
+            "K" : k if CV else "No Cross validation"
         }
     while True:
         see = input("Do you want to see the config file [y/n]")

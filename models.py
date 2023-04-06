@@ -97,7 +97,6 @@ class ResNet(nn.Module):
 
 
 def ResNet18(in_channels, num_classes):
-    print(in_channels, num_classes)
     return ResNet(BasicBlock, [2, 2, 2, 2], in_channels=in_channels, num_classes=num_classes)
 
 class CNN(nn.Module):
