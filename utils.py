@@ -22,7 +22,7 @@ class CustomDataset(Dataset):
         else:
             x, y = self.dataset[self.idxs[index]]
             x = self.transform(x)
-            return torch.tensor(x, requires_grad=True).permute((1, 2, 0)) if not type(x) == type(torch.tensor([1])) else x, torch.tensor(y).long()
+            return torch.tensor(x, requires_grad=True).permute((1, 2, 0)) if not type(x) == type(torch.tensor([1])) else x, torch.tensor(y).float()
 
 
 def isfloat(num):
@@ -384,6 +384,27 @@ def non_iid_partition(dataset, num_clients):
     returns:
       - Dictionary of image indexes for each client
     """
+    if dataset[0][1].shape[0] != 1:
+      from sklearn.cluster import KMeans
+      # Create an array of arrays
+      arr = np.array([np.array(target) for _, target in dataset])
+      # Define the number of clusters
+      n_clusters = num_clients
+
+      # Create a KMeans instance
+      kmeans = KMeans(n_clusters=n_clusters, random_state=0)
+      # Fit the KMeans model
+      kmeans.fit(arr)
+      # Get the labels for each array
+      labels = kmeans.labels_
+      # Get the indices of each data point in each cluster
+      cluster_indices = {}
+      for i in range(n_clusters):
+          indices = np.where(labels == i)[0]
+          cluster_indices[i] = indices
+      return cluster_indices
+
+
     shards_size = 9
     total_shards = len(dataset) // shards_size
     num_shards_per_client = total_shards // num_clients

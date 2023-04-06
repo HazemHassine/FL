@@ -144,9 +144,11 @@ class Server:
                 x.to(self.device)
                 y.to(self.device)
                 logits = self.global_model(x)
-                preds = np.argmax(logits, axis=1)
-                
-                correct = torch.eq(preds,y.flatten())
+                preds = logits.argsort(axis=1)
+                # Set all values that are not 0 or 1 to 0
+                preds[preds == 0] = 1
+                preds[(preds != 0) & (preds != 1)] = 0
+                correct = torch.eq(preds, y)
                 correct = torch.sum(correct)
                 total_correct += correct
 
