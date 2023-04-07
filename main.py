@@ -9,6 +9,7 @@ import os
 from tqdm import tqdm
 import warnings
 warnings.filterwarnings(action='ignore', category=UserWarning)
+warnings.filterwarnings(action='ignore', category=FutureWarning)
 
 
 def main():
@@ -44,42 +45,100 @@ def main():
         root=config["data_path"], download=True, split="train")
     test_dataset = DataClass(
         root=config["data_path"], download=True, split="test")
+    
+    try:
+        CV = config["CV"]
+        k = config["k"]
+    except KeyError:
+        CV = False
 
     if not config["baseline"]:
-        if config["iid"]:
-            train_data_dict = iid_partition(
-                train_dataset, config["num_clients"])
-        else:
-            train_data_dict = non_iid_partition(
-                train_dataset, config["num_clients"])
+        if not CV:
+            if config["iid"]:
+                train_data_dict = iid_partition(
+                    train_dataset, config["num_clients"])
+            else:
+                train_data_dict = non_iid_partition(
+                    train_dataset, config["num_clients"])
 
-        test_data_dict = iid_partition(test_dataset, config["num_clients"])
-        algorithm = config["algorithm"].lower()
-        match algorithm:
-            case "fedavg":
-                from server import Server
-                server = Server(config, train_data_dict,
-                                test_data_dict, train_dataset, test_dataset)
-                pass
-            case "fedprox":
-                from server import Server
-                print("FEDPROX")
-                server = Server(config, train_data_dict,
-                                test_data_dict, train_dataset, test_dataset)
-                pass
-            case "fedreg":
-                from server import Server
-                server = Server(config, train_data_dict,
-                                test_data_dict, train_dataset, test_dataset)
-                pass
-            case "fedbn":
-                from fedbn_server import FedBNServer
-                server = FedBNServer(
-                    config, train_data_dict, test_data_dict, train_dataset, test_dataset)
-                pass
-            case _:
-                raise NotImplementedError
-        server.train()
+            test_data_dict = iid_partition(test_dataset, config["num_clients"])
+            algorithm = config["algorithm"].lower()
+            match algorithm:
+                case "fedavg":
+                    from server import Server
+                    server = Server(config, train_data_dict,
+                                    test_data_dict, train_dataset, test_dataset)
+                    pass
+                case "fedprox":
+                    from server import Server
+                    server = Server(config, train_data_dict,
+                                    test_data_dict, train_dataset, test_dataset)
+                    pass
+                case "fedreg":
+                    from server import Server
+                    server = Server(config, train_data_dict,
+                                    test_data_dict, train_dataset, test_dataset)
+                    pass
+                case "fedbn":
+                    from fedbn_server import FedBNServer
+                    server = FedBNServer(
+                        config, train_data_dict, test_data_dict, train_dataset, test_dataset)
+                    pass
+                case _:
+                    raise NotImplementedError
+            server.train()
+        else:   
+            import random
+            from utils import split_list_k_folds
+            import numpy as np
+            print(f"Training using Cross validation {k}-folds")
+            data = dict(np.load(os.path.join(config["data_path"], f"{config['ds_name']}.npz")))
+            train_dataset = [(image, target) for image, target in zip(data["train_images"],data["train_labels"])]
+            test_dataset = [(image, target) for image, target in zip(data["test_images"],data["test_labels"])]
+            val_dataset = [(image, target) for image, target in zip(data["val_images"],data["val_labels"])]
+            dataset_full = [*train_dataset, *test_dataset, *val_dataset]
+            random.shuffle(dataset_full) # in place
+            folds = split_list_k_folds(dataset_full, k)
+            train = []
+            for k in range(config["k"]):
+                print(f"FOLD {k}")
+                testing_data = folds[k]
+                training_data = [fold for j, fold in enumerate(folds) if j != k]
+                for split in training_data:
+                    train = [*train, *split]
+                
+                if config["iid"]:
+                    train_data_dict = iid_partition(train_dataset, config["num_clients"])
+                else:
+                    train_data_dict = non_iid_partition(train_dataset, config["num_clients"])
+                test_data_dict = iid_partition(testing_data, config["num_clients"])
+                algorithm = config["algorithm"].lower()
+                algorithm = config["algorithm"].lower()
+                match algorithm:
+                    case "fedavg":
+                        from server import Server
+                        server = Server(config, train_data_dict,
+                                        test_data_dict, train_dataset, test_dataset)
+                        pass
+                    case "fedprox":
+                        from server import Server
+                        print("FEDPROX")
+                        server = Server(config, train_data_dict,
+                                        test_data_dict, train_dataset, test_dataset)
+                        pass
+                    case "fedreg":
+                        from server import Server
+                        server = Server(config, train_data_dict,
+                                        test_data_dict, train_dataset, test_dataset)
+                        pass
+                    case "fedbn":
+                        from fedbn_server import FedBNServer
+                        server = FedBNServer(
+                            config, train_data_dict, test_data_dict, train_dataset, test_dataset)
+                        pass
+                    case _:
+                        raise NotImplementedError
+                server.train()
     else:
         import torch
         from torch.optim import SGD
@@ -97,7 +156,7 @@ def main():
         loss_fn = config["criterion"]()
         model.train()
         model.to(config["device"])
-        for e in tqdm(range(1, config["local_epochs"]+1)):
+        for e in range(1, config["local_epochs"]+1):
             temp_loss = []
             print(f"EPOCH {e}")
             for i, (x, y) in enumerate(train_loader):
@@ -132,21 +191,6 @@ def main():
 
         print(
             f"Accuracy after {config['local_epochs']} of training is {correct/len_test_dataset}")
-        # optimizer = SGD(self.model.parameters(), self.config["learning_rate"])
-        # self.model.train()
-        # train_loss = []
-        # for l_epoch in range(self.config["local_epochs"]):
-        #     for x, y in self.train_loader:
-        #         x.to(self.device)
-        #         y.to(self.device)
-        #         optimizer.zero_grad()
-        #         logits = self.model(x)
-        #         loss = self.loss_fn(logits, y.squeeze(-1))
-        #         loss.backward()
-        #         optimizer.step()
-        #         train_loss.append(loss.detach().item())
-        # print(np.mean(train_loss))
-        # return self.num_train_samples, self.model.state_dict()
 
 
 if __name__ == "__main__":

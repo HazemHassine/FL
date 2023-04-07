@@ -49,8 +49,6 @@ class Server:
         for client in self.clients:
             results[client.id] = client.test()
         return results
-
-    
     
 
     def aggregate_(self, wstate_dict):
@@ -107,23 +105,11 @@ class Server:
         self.global_model.load_state_dict(aggregated_state_dict)
         return aggregated_state_dict
 
-    # def aggregate_(self, wstate_dicts):
-    #     old_params = self.global_model.state_dict()
-    #     state_dict = {x: 0.0 for x in self.global_model.parameters()}
-    #     wtotal = 0.0
-    #     for w, st in wstate_dicts.values():
-    #         wtotal += w
-    #         for name in state_dict.keys():
-    #             assert name in state_dict
-    #             state_dict[name] += st[name]*w
-    #     state_dict = {x: state_dict[x]/wtotal for x in state_dict}
-    #     self.global_model.load_state_dict(state_dict)
-    #     return True
 
     def train(self):
         losses = []
         epochs = self.config["global_epochs"]
-        for epoch in tqdm(range(1, epochs+1)):
+        for epoch in range(1, epochs+1):
             clients = random.sample(self.clients, int(len(self.clients) * self.participation_percent))
             states_dict = {}
             print(f"EPOCH {epoch}")
@@ -131,10 +117,8 @@ class Server:
                 client.model.load_state_dict(self.global_model.state_dict())
                 w, local_update = client.train()
                 states_dict[client.id]=[w, local_update]
-                print()
             self.aggregate_(states_dict)
             print(self.test_global())
-
 
     def test_global(self):
         self.global_model.eval()
@@ -144,12 +128,26 @@ class Server:
                 x.to(self.device)
                 y.to(self.device)
                 logits = self.global_model(x)
-                preds = logits.argsort(axis=1)
-                # Set all values that are not 0 or 1 to 0
-                preds[preds == 0] = 1
-                preds[(preds != 0) & (preds != 1)] = 0
-                correct = torch.eq(preds, y)
+                preds = np.argmax(logits, axis=1)
+                correct = torch.eq(preds,y.flatten())
                 correct = torch.sum(correct)
                 total_correct += correct
-
         return self.len_test, total_correct
+
+    # def test_global(self):
+    #     self.global_model.eval()
+    #     total_correct = 0
+    #     with torch.no_grad():
+    #         for x, y in self.test_loader:
+    #             x.to(self.device)
+    #             y.to(self.device)
+    #             logits = self.global_model(x)
+    #             preds = logits.argsort(axis=1)
+    #             # Set all values that are not 0 or 1 to 0
+    #             preds[preds == 0] = 1
+    #             preds[(preds != 0) & (preds != 1)] = 0
+    #             correct = torch.eq(preds, y)
+    #             correct = torch.sum(correct) / 14
+    #             total_correct += correct
+            
+    #     return self.len_test, total_correct

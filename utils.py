@@ -22,7 +22,7 @@ class CustomDataset(Dataset):
         else:
             x, y = self.dataset[self.idxs[index]]
             x = self.transform(x)
-            return torch.tensor(x, requires_grad=True).permute((1, 2, 0)) if not type(x) == type(torch.tensor([1])) else x, torch.tensor(y).float()
+            return torch.tensor(x, requires_grad=True).permute((1, 2, 0)) if not type(x) == type(torch.tensor([1])) else x, torch.tensor(y)
 
 
 def isfloat(num):
@@ -49,7 +49,7 @@ def create_config() -> dict:
 Use default folder configuration:
 -data/ : for raw data storage (.npz files)
 -logs/ : for the logs (.log files) [y/n]
-        ''')
+''')
         if default.lower() not in ["n", "y"]:
             print("not a valid choice [y/n]")
         else:
@@ -57,12 +57,12 @@ Use default folder configuration:
             break
     if not default:
         data_path = input('''Enter the data folder path:
-        ''')
+''')
         if not os.path.exists(data_path):
             os.makedirs(data_path)
 
         log_path = input('''Enter the log path:
-            ''')
+''')
         if not os.path.exists(log_path):
             os.makedirs(log_path)
     else:
@@ -75,12 +75,12 @@ Use default folder configuration:
     if not baseline:
         while True:
             algorithm = input('''
-    Choose between:
-    1- fedavg
-    2- fedprox        
-    3- fedbn        
-    4- fedreg
-            ''')
+Choose between:
+1- fedavg
+2- fedprox        
+3- fedbn        
+4- fedreg
+''')
             if algorithm.isdigit():
                 if int(algorithm) not in [1, 2, 3, 4]:
                     print("Enter a valid number please (1/2/3/4)")
@@ -164,9 +164,9 @@ Use default folder configuration:
     while True:
         # TODO: import models etc..
         model_choice = input('''Choose a model:
-            1. CNN
-            2. resnet18
-        ''')
+1. CNN
+2. resnet18
+''')
         if model_choice.isdigit():
             if int(model_choice) not in [1, 2]:
                 print("Enter either 1 or 2")
@@ -186,12 +186,12 @@ Use default folder configuration:
     if not baseline:
         while True:
             iid = input('''
-    Choose:
-    1- IID
-    2- non-IID
-    ------
-    (Data heterogenity in terms of labels)
-            ''')
+Choose:
+1- IID
+2- non-IID
+------
+(Data heterogenity in terms of labels)
+''')
             if iid.isdigit():
                 if int(iid) not in [1, 2]:
                     print("Enter either 1 or 2")
@@ -234,7 +234,7 @@ Use default folder configuration:
 {info["description"]}
 TASK: {task}
 ***************************************
-                ''')
+''')
                 print("Close the image please")
                 import matplotlib.pyplot as plt
                 img = plt.imread(f"visualization/{ds_name}.png")
@@ -384,26 +384,25 @@ def non_iid_partition(dataset, num_clients):
     returns:
       - Dictionary of image indexes for each client
     """
+
     if dataset[0][1].shape[0] != 1:
-      from sklearn.cluster import KMeans
-      # Create an array of arrays
-      arr = np.array([np.array(target) for _, target in dataset])
-      # Define the number of clusters
-      n_clusters = num_clients
-
-      # Create a KMeans instance
-      kmeans = KMeans(n_clusters=n_clusters, random_state=0)
-      # Fit the KMeans model
-      kmeans.fit(arr)
-      # Get the labels for each array
-      labels = kmeans.labels_
-      # Get the indices of each data point in each cluster
-      cluster_indices = {}
-      for i in range(n_clusters):
-          indices = np.where(labels == i)[0]
-          cluster_indices[i] = indices
-      return cluster_indices
-
+        from sklearn.cluster import KMeans
+        # Create an array of arrays
+        arr = np.array([np.array(target) for _, target in dataset])
+        # Define the number of clusters
+        n_clusters = num_clients
+        # Create a KMeans instance
+        kmeans = KMeans(n_clusters=n_clusters, random_state=0)
+        # Fit the KMeans model
+        kmeans.fit(arr)
+        # Get the labels for each array
+        labels = kmeans.labels_
+        # Get the indices of each data point in each cluster
+        cluster_indices = {}
+        for i in range(n_clusters):
+            indices = np.where(labels == i)[0]
+            cluster_indices[i] = indices
+        return cluster_indices
 
     shards_size = 9
     total_shards = len(dataset) // shards_size
@@ -488,3 +487,13 @@ def generate_fake(model, d, p_iters, ps_eta, pt_eta, task):
     perturb = FSGM(model, perturb, y, p_iters, pt_eta, criterion)
     psuedo_y, perturb_y = model(psuedo), model(perturb)
     return [psuedo, y, psuedo_y], [perturb, y, perturb_y]
+
+def split_list_k_folds(dataset, k):
+    import random
+    random.shuffle(dataset)
+    fold_size = len(dataset) // k
+    folds = []
+    for i in range(k):
+        fold = dataset[i*fold_size:(i+1)*fold_size]
+        folds.append(fold)
+    return folds
