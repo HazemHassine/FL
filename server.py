@@ -1,5 +1,6 @@
 from torch.utils.data import DataLoader
 import numpy as np
+import pandas as pd
 import torch
 from functools import partial
 import random
@@ -7,6 +8,7 @@ from tqdm import tqdm
 import copy
 import torch
 from utils import CustomDataset
+import os
 class Server:
     def __init__(self, config, data_dict, test_dict, train_dataset, test_dataset):
         self.config = config
@@ -36,6 +38,7 @@ class Server:
         self.make_clients()
         self.len_test = len(test_dataset)
         self.device = config["device"]
+        self.data_frame = pd.DataFrame(columns=["Accuracy"], index=list(range(1,config["global_epochs"]+1)))
     
     def make_clients(self):
         self.clients = []
@@ -106,19 +109,30 @@ class Server:
         return aggregated_state_dict
 
 
-    def train(self):
+    def train(self, k=None):
         losses = []
         epochs = self.config["global_epochs"]
         for epoch in range(1, epochs+1):
             clients = random.sample(self.clients, int(len(self.clients) * self.participation_percent))
             states_dict = {}
-            print(f"EPOCH {epoch}")
+            print(f"Communication round: {epoch}")
             for client in clients:
                 client.model.load_state_dict(self.global_model.state_dict())
-                w, local_update = client.train()
+                w, local_update = client.train(epoch)
                 states_dict[client.id]=[w, local_update]
             self.aggregate_(states_dict)
-            print(self.test_global())
+            len_test, total_correct = self.test_global()
+            acc = total_correct/ len_test
+            print(f"Accuracy: {acc}")
+        
+        if k is not None:
+            if k == 0:
+                os.makedir(os.path.join(self.config["log_path"], "CrossValidation"))
+            fold_path = os.path.join(self.config["log_path"], "CrossValidation", f"fold_{k+1}")
+            os.makedir(fold_path)
+            for client in clients:
+                client.data_frame.to_csv(os.path.join(fold_path, f"Client_{client.id}.csv"))
+
 
     def test_global(self):
         self.global_model.eval()

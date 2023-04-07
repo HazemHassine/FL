@@ -101,7 +101,7 @@ def main():
             folds = split_list_k_folds(dataset_full, k)
             train = []
             for k in range(config["k"]):
-                print(f"FOLD {k}")
+                print(f"FOLD {k+1}")
                 testing_data = folds[k]
                 training_data = [fold for j, fold in enumerate(folds) if j != k]
                 for split in training_data:
@@ -112,7 +112,6 @@ def main():
                 else:
                     train_data_dict = non_iid_partition(train_dataset, config["num_clients"])
                 test_data_dict = iid_partition(testing_data, config["num_clients"])
-                algorithm = config["algorithm"].lower()
                 algorithm = config["algorithm"].lower()
                 match algorithm:
                     case "fedavg":
@@ -138,7 +137,7 @@ def main():
                         pass
                     case _:
                         raise NotImplementedError
-                server.train()
+                server.train(k)
     else:
         import torch
         from torch.optim import SGD

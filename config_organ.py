@@ -1,7 +1,7 @@
 from models import CNN
 import torch.nn as nn
 
-config = {'algorithm': 'fedavg',
+config = {'algorithm': 'fedprox',
           'baseline': False,
           'batch_size': 50,
           'criterion': nn.CrossEntropyLoss,
@@ -10,10 +10,10 @@ config = {'algorithm': 'fedavg',
           'ds_name': 'organcmnist',
           'eval_train': True,
           'gamma': None,
-          'global_epochs': 2,
+          'global_epochs': 4,
           'iid': False,
           'learning_rate': 0.01,
-          'local_epochs': 2,
+          'local_epochs': 3,
           'log_path': './logs',
           'model': CNN,
           'n_channels': 1,
@@ -23,4 +23,6 @@ config = {'algorithm': 'fedavg',
           'seed': 1,
           'task': 'multi-class',
           'test_transform': None,
-          'train_transform': None}
+          'train_transform': None,
+          'mu': 0.1
+          }

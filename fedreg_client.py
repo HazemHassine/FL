@@ -7,6 +7,8 @@ from torch.optim import SGD
 import copy
 from utils import generate_fake
 import gc
+import pandas as pd
+
 class FedRegClient():
     def __init__(self, id, config, train_dataset, test_dataset, data_idxs, test_idxs, gamma, ps_eta, pt_eta, p_iters) -> None:
         self.id = id
@@ -26,20 +28,9 @@ class FedRegClient():
         self.ps_eta = ps_eta
         self.pt_eta = pt_eta
         self.p_iters = p_iters
-        # def generate_fake(model, d, p_iters, ps_eta, pt_eta)
-        
-        # TODO: Generate pseudo and fake in the init using the below valuess
-        
-        # pseudo_data , perturbed_data = GENERATEFAKE(model, ps_eta, pt_eta, p_iters)
-        #    def generate_fake(self, x, y):
-        # return [psuedo, y, psuedo_y], [perturb, y, perturb_y]
-# 
-        # and maybe put it in a custom dataset? cuz the mapping of the indexes
-        ### special for fedreg ###
+        self.data_frame = pd.DataFrame(columns=["Accuracy", "Loss"], index=list(range(1,config["global_epochs"]+1)))
 
-
-# TODO: change the training function to include the pseduo and perturbed data losses and generation and everything
-    def train(self):
+    def train(self, round):
         gamma = self.gamma
         ps_eta = self.ps_eta
         pt_eta = self.pt_eta
@@ -64,7 +55,6 @@ class FedRegClient():
             old_model_opt = SGD(old_model.parameters(), lr=lr)
             penal_model_opt = SGD(penal_model.parameters(), lr=lr)
             parameters = list(global_model.parameters())
-            # TODO generate fake data from train_dataset
             for i, (x, y) in enumerate(self.train_loader):
                 median_model_opt.zero_grad()
                 old_model_opt.zero_grad()

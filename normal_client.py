@@ -4,6 +4,7 @@ from utils import CustomDataset
 import torch
 import numpy as np
 from torch.optim import SGD
+import pandas as pd
 
 class NormalClient():
     def __init__(self, id, config, train_dataset, test_dataset, data_idxs, test_idxs) -> None:
@@ -18,8 +19,9 @@ class NormalClient():
         self.inner_optimizer = SGD
         self.loss_fn = config["criterion"]()
         self.num_train_samples = len(data_idxs)
+        self.data_frame = pd.DataFrame(columns=["Accuracy", "Loss"], index=list(range(1,config["global_epochs"]+1)))
 
-    def train(self):
+    def train(self, round):
         optimizer = SGD(self.model.parameters(), self.config["learning_rate"])
         self.model.train()
         train_loss = []
@@ -51,8 +53,9 @@ class NormalClient():
                 x.to(self.device)
                 y.to(self.device)
                 logits = self.model(x)
-                preds = np.argmax(logits, dim=1)
-                correct = np.sum(preds == y)
-            total_correct += correct
+                preds = np.argmax(logits, axis=1)
+                correct = torch.eq(preds, y.flatten())
+                correct = torch.sum(correct)
+                total_correct += correct
         return total_correct, self.len_test
     
