@@ -129,7 +129,6 @@ class Server:
             clients = random.sample(self.clients, int(
                 len(self.clients) * self.participation_percent))
             states_dict = {}
-            print(f"Communication round: {epoch}")
             for client in clients:
                 client.model.load_state_dict(self.global_model.state_dict())
                 w, local_update = client.train(epoch)
@@ -137,7 +136,7 @@ class Server:
             self.aggregate_(states_dict)
             len_test, total_correct = self.test_global()
             acc = total_correct / len_test
-            self.data_frame
+            self.data_frame.loc[epoch, "Accuracy"] = acc
             print(f"Global accuracy at round {epoch}: {acc}")
         if k is not None:
             if k == 0:
