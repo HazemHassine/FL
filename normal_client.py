@@ -21,7 +21,7 @@ class NormalClient():
         self.num_train_samples = len(data_idxs)
         self.data_frame = pd.DataFrame(columns=["Accuracy", "Loss"], index=list(range(1,config["global_epochs"]+1)))
 
-    def train(self, round):
+    def train(self, roundnum):
         optimizer = SGD(self.model.parameters(), self.config["learning_rate"])
         self.model.train()
         train_loss = []
@@ -35,7 +35,11 @@ class NormalClient():
                 loss.backward()
                 optimizer.step()
                 train_loss.append(loss.detach().item())
-        print(np.mean(train_loss))
+        self.data_frame.loc[roundnum, "Loss"] = np.mean(train_loss)
+        acc = self.test()
+        acc = acc[0]/acc[1]
+        acc = acc.item()
+        self.data_frame.loc[roundnum, "Accuracy"] = acc
         return self.num_train_samples, self.model.state_dict()
 
     def get_param(self) -> OrderedDict:

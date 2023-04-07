@@ -5,7 +5,8 @@ import os
 import numpy as np
 import torch.nn as nn
 from torchvision import transforms
-
+import pandas as pd
+import matplotlib.pyplot as plt
 
 class CustomDataset(Dataset):
     def __init__(self, dataset, idxs, transform=None) -> None:
@@ -497,3 +498,17 @@ def split_list_k_folds(dataset, k):
         fold = dataset[i*fold_size:(i+1)*fold_size]
         folds.append(fold)
     return folds
+
+
+def plots(path):
+    all_csvs = {}
+    if "CrossValidation" in os.listdir(path):
+        csvs = []
+        for fold in os.listdir(os.path.join(path, "CrossValidation")):
+            for client in os.listdir(os.path.join(path, "CrossValidation", fold)):
+                if client.endswith(".csv"):
+                    csvs.append(pd.read_csv(client))
+            for csv in csvs:
+                plt.plot(csv.Loss)
+                plt.show()
+            

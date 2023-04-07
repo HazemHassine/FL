@@ -1,19 +1,17 @@
 from argparse import ArgumentParser
 from loguru import logger
-import argparse
 import importlib
 import medmnist
 from medmnist import INFO
-from utils import create_config, iid_partition, non_iid_partition
+from utils import create_config, iid_partition, non_iid_partition, plots
 import os
-from tqdm import tqdm
 import warnings
+import pandas as pd
 warnings.filterwarnings(action='ignore', category=UserWarning)
 warnings.filterwarnings(action='ignore', category=FutureWarning)
 
-
 def main():
-    parser = argparse.ArgumentParser()
+    parser = ArgumentParser()
     parser.add_argument(
         "-c", "--config", help="The config file", required=False)
     args = parser.parse_args()
@@ -40,6 +38,17 @@ def main():
     DataClass = getattr(medmnist, info["python_class"])
     if not os.path.exists(config["data_path"]):
         os.makedirs(config["data_path"])
+
+    seed = config["seed"]
+    import random
+    import numpy as np
+    import torch
+    # set the seed for Python's built-in random module
+    random.seed(seed)
+    # set the seed for Numpy
+    np.random.seed(seed)
+    # set the seed for PyTorch
+    torch.manual_seed(seed)
 
     train_dataset = DataClass(
         root=config["data_path"], download=True, split="train")
@@ -86,11 +95,10 @@ def main():
                     pass
                 case _:
                     raise NotImplementedError
-            server.train()
+            path = server.train()
+            plots(path)
         else:   
-            import random
             from utils import split_list_k_folds
-            import numpy as np
             print(f"Training using Cross validation {k}-folds")
             data = dict(np.load(os.path.join(config["data_path"], f"{config['ds_name']}.npz")))
             train_dataset = [(image, target) for image, target in zip(data["train_images"],data["train_labels"])]
@@ -101,7 +109,7 @@ def main():
             folds = split_list_k_folds(dataset_full, k)
             train = []
             for k in range(config["k"]):
-                print(f"FOLD {k+1}")
+                print(f"*****************FOLD {k+1}*****************")
                 testing_data = folds[k]
                 training_data = [fold for j, fold in enumerate(folds) if j != k]
                 for split in training_data:
@@ -137,7 +145,10 @@ def main():
                         pass
                     case _:
                         raise NotImplementedError
-                server.train(k)
+                path = server.train(k)
+                for client in server.clients:
+                    client.data_frame = pd.DataFrame(columns=["Accuracy", "Loss"], index=list(range(1, config["global_epochs"]+1)))
+            plots(path)
     else:
         import torch
         from torch.optim import SGD

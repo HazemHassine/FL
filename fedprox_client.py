@@ -44,6 +44,8 @@ class FedProxClient():
                 train_loss.append(loss.detach().item())
         self.data_frame.loc[roundnum, "Loss"] = np.mean(train_loss)
         acc = self.test()
+        acc = acc[0]/acc[1]
+        acc = acc.item()
         self.data_frame.loc[roundnum, "Accuracy"] = acc[0]/acc[1]
         return self.num_train_samples, self.model.state_dict()
 

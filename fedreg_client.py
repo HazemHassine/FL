@@ -15,8 +15,6 @@ class FedRegClient():
         self.train_loader = DataLoader(CustomDataset(train_dataset, data_idxs),batch_size=config["batch_size"], shuffle=True)
         self.test_dataset = test_dataset
         self.test_loader = DataLoader(CustomDataset(test_dataset, test_idxs), batch_size=32, shuffle=False)
-
-        # TODO: add generate function to the model
         self.model = config["model"](config["n_channels"], config["n_classes"])
         self.device = config["device"]
         self.len_test = len(test_dataset)
