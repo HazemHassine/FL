@@ -1,7 +1,7 @@
 from models import CNN
 import torch.nn as nn
 
-config = {'algorithm': 'fedprox',
+config = {'algorithm': 'fedreg',
           'baseline': False,
           'batch_size': 50,
           'criterion': nn.CrossEntropyLoss,
@@ -24,5 +24,10 @@ config = {'algorithm': 'fedprox',
           'task': 'multi-class',
           'test_transform': None,
           'train_transform': None,
-          'mu': 0.1
+          'ps_eta': 0.1,
+          'pt_eta': 0.001,
+          'p_iters': 4, 
+          'mu': 0.1,
+          'gamma': 0.4
+
           }

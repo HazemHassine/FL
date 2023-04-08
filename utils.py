@@ -262,26 +262,26 @@ TASK: {task}
             print("Please enter a number")
 
     while True:
-        CV = input("Use K-fold cross valudation? [y/n]")
+        CV = input("Use K-fold cross validation? [y/n]")
         if CV.lower() not in ["y", "n"]:
             print("Enter a valid choice [y/n]")
         else:
             CV = True if CV.lower() == "y" else False
             if not CV:
                 k = None
+            break
+    if CV:
+        while True:
+            k = input(
+            "Enter the number of folds (K), Enter: default (5)")
+            if k == '':
+                k = 5
                 break
+            if not k.isdigit():
+                print("Please enter a digit")
+                continue
             else:
-                while True:
-                    k = input(
-                        "Enter the number of folds (K), Enter: default (5)")
-                    if k == '':
-                        k = 5
-                        break
-                    if not k.isdigit():
-                        print("Please enter a digit")
-                        continue
-                    else:
-                        k = int(k)
+                k = int(k)
 
     import torch
     if baseline:
@@ -341,8 +341,8 @@ TASK: {task}
             "iid": iid,
             "criterion":  nn.BCEWithLogitsLoss if task == "multi-label, binary-class" else nn.CrossEntropyLoss,
             "learning_rate": learning_rate,
-            "cross_validation": CV,
-            "K": k if CV else "No Cross validation"
+            "CV": CV,
+            "k": k if CV else "No Cross validation"
         }
     while True:
         see = input("Do you want to see the config file [y/n]")

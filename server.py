@@ -140,8 +140,12 @@ class Server:
             print(f"Global accuracy at round {epoch}: {acc}")
         if k is not None:
             if k == 0:
-                os.makedirs(os.path.join(
-                    self.config["log_path"], "CrossValidation"))
+                if not os.path.exists(os.path.join(self.config["log_path"], "CrossValidation")):
+                    os.makedirs(os.path.join(self.config["log_path"], "CrossValidation"))
+                else:
+                    import shutil
+                    shutil.rmtree(os.path.join(self.config["log_path"], "CrossValidation"))
+                    os.makedirs(os.path.join(self.config["log_path"], "CrossValidation"))
             fold_path = os.path.join(
                 self.config["log_path"], "CrossValidation", f"fold_{k+1}")
             os.makedirs(fold_path)
@@ -150,7 +154,11 @@ class Server:
                     fold_path, f"Client_{client.id}.csv"))
             return os.path.join(self.config["log_path"], "CrossValidation")
         else:
+            import time
+
+            np.random.seed(int(str(time.time())[:2]))
             appended = str(np.random.randint(1,100))
+            np.random.seed(self.config["seed"])
             self.appended = appended
             os.makedirs(os.path.join(self.config["log_path"], f"log_{self.config['ds_name']}{appended}"))
             for client in clients:

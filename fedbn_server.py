@@ -1,5 +1,5 @@
 from server import Server
 
 class FedBNServer(Server):
-    def aggregate_(self):
+    def temp(self):
         pass

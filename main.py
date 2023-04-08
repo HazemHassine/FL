@@ -63,6 +63,7 @@ def main():
 
     if not config["baseline"]:
         if not CV:
+            print("Training with no cross validation")
             if config["iid"]:
                 train_data_dict = iid_partition(
                     train_dataset, config["num_clients"])
