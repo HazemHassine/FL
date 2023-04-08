@@ -151,6 +151,7 @@ class Server:
             return os.path.join(self.config["log_path"], "CrossValidation")
         else:
             appended = str(np.random.randint(1,100))
+            self.appended = appended
             os.makedirs(os.path.join(self.config["log_path"], f"log_{self.config['ds_name']}{appended}"))
             for client in clients:
                 client.data_frame.to_csv(os.path.join(
@@ -189,3 +190,4 @@ class Server:
     #             total_correct += correct
 
     #     return self.len_test, total_correct
+

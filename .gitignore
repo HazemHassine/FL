@@ -4,3 +4,4 @@ __pycache__/
 data/
 dataframes.txt
 logs/
+pseudo_code.py
