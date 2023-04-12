@@ -73,14 +73,18 @@ def main():
 
             test_data_dict = iid_partition(test_dataset, config["num_clients"])
             algorithm = config["algorithm"].lower()
-
+            
             if algorithm == "fedavg":
+                from server import Server
                 server = Server(config, train_data_dict, test_data_dict, train_dataset, test_dataset)
             elif algorithm == "fedprox":
+                from server import Server
                 server = Server(config, train_data_dict, test_data_dict, train_dataset, test_dataset)
             elif algorithm == "fedreg":
+                from server import Server
                 server = Server(config, train_data_dict, test_data_dict, train_dataset, test_dataset)
             elif algorithm == "fedbn":
+                from fedbn_server import FedBNServer
                 server = FedBNServer(config, train_data_dict, test_data_dict, train_dataset, test_dataset)
             else:
                 raise NotImplementedError
