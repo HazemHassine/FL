@@ -172,15 +172,15 @@ Choose between:
             if int(model_choice) not in [1, 2]:
                 print("Enter either 1 or 2")
                 continue
-            match int(model_choice):
-                case 1:
-                    from models import CNN
-                    model = CNN
-                    pass
-                case 2:
-                    from models import ResNet18
-                    model = ResNet18
-                    pass
+            if int(model_choice) == 1:
+                from models import CNN
+                
+                model = CNN
+            elif int(model_choice) == 2:
+                from models import ResNet18
+                model = ResNet18
+            else:
+                raise NotImplementedError
             break
         else:
             print("Enter either 1 or 2")

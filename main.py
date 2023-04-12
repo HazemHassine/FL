@@ -73,29 +73,18 @@ def main():
 
             test_data_dict = iid_partition(test_dataset, config["num_clients"])
             algorithm = config["algorithm"].lower()
-            match algorithm:
-                case "fedavg":
-                    from server import Server
-                    server = Server(config, train_data_dict,
-                                    test_data_dict, train_dataset, test_dataset)
-                    pass
-                case "fedprox":
-                    from server import Server
-                    server = Server(config, train_data_dict,
-                                    test_data_dict, train_dataset, test_dataset)
-                    pass
-                case "fedreg":
-                    from server import Server
-                    server = Server(config, train_data_dict,
-                                    test_data_dict, train_dataset, test_dataset)
-                    pass
-                case "fedbn":
-                    from fedbn_server import FedBNServer
-                    server = FedBNServer(
-                        config, train_data_dict, test_data_dict, train_dataset, test_dataset)
-                    pass
-                case _:
-                    raise NotImplementedError
+
+            if algorithm == "fedavg":
+                server = Server(config, train_data_dict, test_data_dict, train_dataset, test_dataset)
+            elif algorithm == "fedprox":
+                server = Server(config, train_data_dict, test_data_dict, train_dataset, test_dataset)
+            elif algorithm == "fedreg":
+                server = Server(config, train_data_dict, test_data_dict, train_dataset, test_dataset)
+            elif algorithm == "fedbn":
+                server = FedBNServer(config, train_data_dict, test_data_dict, train_dataset, test_dataset)
+            else:
+                raise NotImplementedError
+
             path = server.train()
             plots(path)
         else:   
@@ -122,30 +111,22 @@ def main():
                     train_data_dict = non_iid_partition(train_dataset, config["num_clients"])
                 test_data_dict = iid_partition(testing_data, config["num_clients"])
                 algorithm = config["algorithm"].lower()
-                match algorithm:
-                    case "fedavg":
-                        from server import Server
-                        server = Server(config, train_data_dict,
-                                        test_data_dict, train_dataset, test_dataset)
-                        pass
-                    case "fedprox":
-                        from server import Server
-                        print("FEDPROX")
-                        server = Server(config, train_data_dict,
-                                        test_data_dict, train_dataset, test_dataset)
-                        pass
-                    case "fedreg":
-                        from server import Server
-                        server = Server(config, train_data_dict,
-                                        test_data_dict, train_dataset, test_dataset)
-                        pass
-                    case "fedbn":
-                        from fedbn_server import FedBNServer
-                        server = FedBNServer(
-                            config, train_data_dict, test_data_dict, train_dataset, test_dataset)
-                        pass
-                    case _:
-                        raise NotImplementedError
+            
+                if algorithm == "fedavg":
+                    from server import Server
+                    server = Server(config, train_data_dict, test_data_dict, train_dataset, test_dataset)
+                elif algorithm == "fedprox":
+                    from server import Server
+                    server = Server(config, train_data_dict, test_data_dict, train_dataset, test_dataset)
+                elif algorithm == "fedreg":
+                    from server import Server
+                    server = Server(config, train_data_dict, test_data_dict, train_dataset, test_dataset)
+                elif algorithm == "fedbn":
+                    from fedbn_server import FedBNServer
+                    server = FedBNServer(config, train_data_dict, test_data_dict, train_dataset, test_dataset)
+                else:
+                    raise NotImplementedError
+            
                 path = server.train(k)
                 for client in server.clients:
                     client.data_frame = pd.DataFrame(columns=["Accuracy", "Loss"], index=list(range(1, config["global_epochs"]+1)))
